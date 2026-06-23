@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DENSO DAM Folder Structure</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f8f9fa; color: #1a1a2e; padding: 16px; }
+
+  .header { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+  .header h1 { font-size: 16px; font-weight: 700; color: #1a1a2e; }
+  .denso-badge { background: #c00; color: white; font-size: 10px; font-weight: 700; padding: 3px 8px; border-radius: 4px; letter-spacing: 0.5px; }
+
+  .controls { display: flex; gap: 6px; margin-bottom: 12px; }
+  .expand-btn { padding: 6px 12px; font-size: 11px; font-weight: 500; cursor: pointer; border: 1px solid #ddd; border-radius: 6px; background: #fff; color: #555; }
+  .expand-btn:hover { background: #f0f0f0; }
+
+  .legend { display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 12px; padding: 8px 12px; background: #fff; border-radius: 8px; border: 1px solid #e8e8e8; }
+  .legend-item { display: flex; align-items: center; gap: 5px; font-size: 11px; color: #666; }
+  .legend-dot { width: 10px; height: 10px; border-radius: 3px; flex-shrink: 0; }
+
+  .callout { display: flex; gap: 16px; margin-bottom: 12px; flex-wrap: wrap; }
+  .callout-box { flex: 1; min-width: 220px; border-radius: 8px; padding: 10px 12px; font-size: 11.5px; line-height: 1.5; }
+  .callout-box.cat-lang { background: #fff7ed; border: 1px solid #fcd59a; color: #7c4800; }
+  .callout-box.sub-lang { background: #f0f4ff; border: 1px solid #b8c8f8; color: #1e3a8a; }
+  .callout-box strong { display: block; font-size: 12px; margin-bottom: 3px; }
+
+  .tree { background: #fff; border: 1px solid #e8e8e8; border-radius: 10px; overflow: hidden; }
+  .tree-inner { padding: 8px 0; max-height: 520px; overflow-y: auto; }
+
+  .node { user-select: none; }
+  .node-row { display: flex; align-items: center; padding: 3px 0; cursor: pointer; transition: background 0.1s; border-radius: 4px; }
+  .node-row:hover { background: #f5f5f5; }
+  .node-toggle { width: 18px; height: 18px; display: flex; align-items: center; justify-content: center; font-size: 9px; color: #aaa; flex-shrink: 0; }
+  .node-icon { font-size: 13px; margin-right: 5px; flex-shrink: 0; }
+  .node-label { font-size: 12.5px; font-weight: 400; color: #222; flex: 1; }
+  .node-label.cat { font-weight: 700; font-size: 13px; color: #1a1a2e; }
+  .node-label.subcat { font-weight: 600; font-size: 12.5px; color: #2c3e7a; }
+  .node-label.asset { font-weight: 400; font-size: 12px; color: #555; }
+  .node-label.lang-cat { font-weight: 600; font-size: 12.5px; color: #92580a; }
+  .node-label.lang-sub { font-weight: 600; font-size: 12.5px; color: #1e4fa0; }
+  .node-label.lang-file { font-weight: 400; font-size: 12px; color: #666; }
+
+  .tag { font-size: 9.5px; font-weight: 600; padding: 1px 6px; border-radius: 10px; margin-left: 6px; letter-spacing: 0.3px; vertical-align: middle; }
+  .tag.general { background: #fde8c0; color: #7c4800; }
+
+  .node-children { display: none; }
+  .node-children.open { display: block; }
+
+  ::-webkit-scrollbar { width: 5px; } ::-webkit-scrollbar-thumb { background: #ccc; border-radius: 4px; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <span class="denso-badge">DENSO</span>
+  <h1>DAM Folder Structure</h1>
+</div>
+
+<div class="callout">
+  <div class="callout-box cat-lang">
+    <strong>🌐 Language folder at Category level</strong>
+    General content covering the whole category — overview videos, category brochures, general warranties. Not tied to a specific product.
+  </div>
+  <div class="callout-box sub-lang">
+    <strong>🌐 Language folder inside Subcategory</strong>
+    Product-specific localised files — e.g. A/C Compressor installation video in Greek, product warranty in Romanian.
+  </div>
+</div>
+
+<div class="legend">
+  <div class="legend-item"><div class="legend-dot" style="background:#1a1a2e;"></div> Main Category</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#2c3e7a;"></div> Subcategory / Product</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#4a9e6b;"></div> Asset Type</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#d4900a;"></div> Language – Category-level</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#2563c4;"></div> Language – Subcategory-level</div>
+</div>
+
+<div class="controls">
+  <button class="expand-btn" onclick="expandAll()">Expand all</button>
+  <button class="expand-btn" onclick="collapseAll()">Collapse all</button>
+</div>
+
+<div class="tree">
+  <div class="tree-inner" id="tree-root"></div>
+</div>
+
+<div style="margin-top:10px;font-size:11px;color:#999;padding:0 2px;">
+  💡 Click any row to expand. Greek shown as example — Romanian, Italian, French etc. follow the same pattern.
+</div>
+
+<script>
+const ASSET_TYPES = ["Advert Visuals", "Catalogue", "Marketing", "Packaging", "Product"];
+const LANG_ABBRS = {
+  "Greek":    ["Videos (GR)", "Brochures (GR)", "Warranties (GR)"],
+  "Romanian": ["Videos (RO)", "Brochures (RO)", "Warranties (RO)"],
+  "Italian":  ["Videos (IT)", "Brochures (IT)", "Warranties (IT)"]
+};
+const LANG_FLAGS = { "Greek": "🇬🇷", "Romanian": "🇷🇴", "Italian": "🇮🇹" };
+
+const CATEGORIES = [
+  { name: "Air Conditioning & Engine Cooling", sub: ["A/C Compressor","A/C Compressor Oil","A/C Condenser","Actuators & Resistors","Cabin Blower Fans","Cooling Fans","Cooling Radiators","Evaporators","Expansion Valves","Heater Cores","Intercoolers","Pressure Switches & Sensors","Receiver Driers","Thermostats"] },
+  { name: "Diesel Engine Components", sub: ["Common Rail Injector","Common Rail Pump","Common Rail SCV"] },
+  { name: "Engine Management Systems", sub: ["Camshaft & Crankshaft Sensors","EGR Valves","Exhaust Gas Temperature Sensors","Lambda Sensors","MAP Sensors","Mass Air Flow Sensors"] },
+  { name: "Filtration", sub: ["Cabin Air Filters"] },
+  { name: "Ignition", sub: ["Fuel Pumps","Glow Plugs","Ignition Coils","Spark Plugs"] },
+  { name: "Rotating Electrics", sub: ["Alternators","Starters"] },
+  { name: "Wiper Blades", sub: ["ClearJet Wiper Blade","Conventional Wiper Blades","Flat Wiper Blades","Hybrid Wiper Blades","Rear Wiper Blades"] },
+];
+
+let nid = 0;
+function n(label, icon, cls, children = [], tag = '') {
+  return { id: 'n'+(nid++), label, icon, cls, children, tag };
+}
+
+function buildTree() {
+  nid = 0;
+  return CATEGORIES.map(cat => {
+    const subNodes = cat.sub.map(sub => {
+      const assets = ASSET_TYPES.map(a => n(a, '📄', 'asset'));
+      const langFolders = Object.entries(LANG_ABBRS).map(([lang, files]) =>
+        n(LANG_FLAGS[lang] + ' ' + lang, '🌐', 'lang-sub',
+          files.map(f => n(f, '📄', 'lang-file')))
+      );
+      return n(sub, '📂', 'subcat', [...assets, ...langFolders]);
+    });
+
+    const catLangFolders = Object.entries(LANG_ABBRS).map(([lang, files]) =>
+      n(LANG_FLAGS[lang] + ' ' + lang, '🌐', 'lang-cat',
+        files.map(f => n(f, '📄', 'lang-file')),
+        'general')
+    );
+
+    return n(cat.name, '📁', 'cat', [...subNodes, ...catLangFolders]);
+  });
+}
+
+function renderNode(node, depth) {
+  const indent = 8 + depth * 16;
+  const hasKids = node.children.length > 0;
+  const tagHtml = node.tag === 'general' ? '<span class="tag general">category-wide</span>' : '';
+  return `
+    <div class="node" id="${node.id}">
+      <div class="node-row" onclick="toggle('${node.id}')" style="padding-left:${indent}px">
+        <span class="node-toggle" style="${hasKids ? '' : 'visibility:hidden'}">${hasKids ? '▶' : ''}</span>
+        <span class="node-icon">${node.icon}</span>
+        <span class="node-label ${node.cls}">${node.label}</span>
+        ${tagHtml}
+      </div>
+      ${hasKids ? `<div class="node-children" id="${node.id}-ch">${node.children.map(c => renderNode(c, depth+1)).join('')}</div>` : ''}
+    </div>`;
+}
+
+function toggle(id) {
+  const ch = document.getElementById(id+'-ch');
+  const tog = document.querySelector(`#${id} > .node-row .node-toggle`);
+  if (!ch) return;
+  const open = ch.classList.toggle('open');
+  if (tog) tog.textContent = open ? '▼' : '▶';
+}
+
+function expandAll() {
+  document.querySelectorAll('.node-children').forEach(el => el.classList.add('open'));
+  document.querySelectorAll('.node-toggle').forEach(el => { if(el.style.visibility!=='hidden') el.textContent='▼'; });
+}
+function collapseAll() {
+  document.querySelectorAll('.node-children').forEach(el => el.classList.remove('open'));
+  document.querySelectorAll('.node-toggle').forEach(el => { if(el.style.visibility!=='hidden') el.textContent='▶'; });
+}
+
+document.getElementById('tree-root').innerHTML = buildTree().map(nd => renderNode(nd, 0)).join('');
+</script>
+</body>
+</html>
