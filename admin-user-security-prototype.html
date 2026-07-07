@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>User Management — Admin</title>
+<style>
+  :root{
+    --blue:#1b6ac9; --red:#d93025; --green:#1e8e3e; --amber:#e37400;
+    --border:#e0e0e0; --bg:#f7f8fa; --text:#202124; --muted:#5f6368;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;}
+  body{background:var(--bg);color:var(--text);font-size:13px;}
+
+  /* Top bar */
+  .topbar{background:#fff;border-bottom:1px solid var(--border);padding:10px 24px;display:flex;align-items:center;gap:16px;}
+  .logo{font-size:16px;font-weight:700;color:var(--blue);}
+  .topbar .spacer{flex:1;}
+  .sec-issues{display:flex;align-items:center;gap:6px;background:#fdecea;color:var(--red);border:1px solid #f5c6c2;border-radius:16px;padding:5px 12px;font-weight:600;cursor:pointer;}
+  .sec-issues:hover{background:#fbdad6;}
+  .sec-issues .dot{width:8px;height:8px;border-radius:50%;background:var(--red);animation:pulse 1.5s infinite;}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+  .userchip{display:flex;align-items:center;gap:8px;}
+  .avatar{width:32px;height:32px;border-radius:50%;background:var(--blue);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;}
+  .userchip .name{font-weight:600;}
+  .role-badge{background:#e8f0fe;color:var(--blue);border-radius:4px;padding:2px 8px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;}
+
+  /* Page header */
+  .page{max-width:1200px;margin:24px auto;padding:0 24px;}
+  .page-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}
+  .page-head h1{font-size:20px;font-weight:600;}
+  .page-head .sub{color:var(--muted);margin-top:4px;}
+
+  /* Alert banner */
+  .banner{background:#fdecea;border:1px solid #f5c6c2;border-left:4px solid var(--red);border-radius:6px;padding:12px 16px;margin:14px 0 18px;display:none;}
+  .banner.show{display:block;}
+  .banner strong{color:var(--red);}
+
+  /* Table */
+  .card{background:#fff;border:1px solid var(--border);border-radius:8px;overflow:hidden;box-shadow:0 1px 2px rgba(0,0,0,.04);}
+  table{width:100%;border-collapse:collapse;}
+  thead th{background:#f1f3f4;color:var(--muted);font-size:12px;font-weight:600;text-align:left;padding:10px 14px;border-bottom:1px solid var(--border);white-space:nowrap;}
+  tbody td{padding:12px 14px;border-bottom:1px solid #eee;vertical-align:middle;white-space:nowrap;}
+  tbody tr:hover{background:#fafbfc;}
+  tbody tr.flagged{background:#fff8f7;}
+  tbody tr.flagged:hover{background:#fdf0ee;}
+  tbody tr.suspended{opacity:.55;}
+  tbody tr.suspended td{text-decoration:none;}
+  .uname{color:var(--blue);font-weight:600;cursor:pointer;}
+  .email{color:var(--muted);}
+  .pill{display:inline-block;border-radius:12px;padding:3px 10px;font-size:11px;font-weight:700;}
+  .pill.needs{background:#fdecea;color:var(--red);}
+  .pill.ok{background:#e6f4ea;color:var(--green);}
+  .pill.susp{background:#eee;color:var(--muted);}
+  .date-warn{color:var(--red);font-weight:600;}
+  .date-ok{color:var(--text);}
+  .rel{color:var(--muted);font-size:11px;margin-left:6px;}
+  .btn{border-radius:4px;border:1px solid;padding:5px 12px;font-size:12px;font-weight:600;cursor:pointer;background:#fff;transition:all .15s;}
+  .btn.ping{color:var(--blue);border-color:var(--blue);}
+  .btn.ping:hover{background:var(--blue);color:#fff;}
+  .btn.suspend{color:var(--red);border-color:var(--red);margin-left:6px;}
+  .btn.suspend:hover{background:var(--red);color:#fff;}
+  .btn.restore{color:var(--green);border-color:var(--green);margin-left:6px;}
+  .btn.restore:hover{background:var(--green);color:#fff;}
+  .btn:disabled{opacity:.5;cursor:default;}
+
+  .foot{padding:10px 14px;color:var(--muted);font-size:12px;}
+
+  /* Toast */
+  #toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#323232;color:#fff;padding:10px 20px;border-radius:6px;font-size:13px;opacity:0;pointer-events:none;transition:opacity .25s;box-shadow:0 4px 12px rgba(0,0,0,.3);}
+  #toast.show{opacity:1;}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="logo">AdminPanel</div>
+  <div class="spacer"></div>
+  <div class="sec-issues" id="secBadge" title="Show affected users">
+    <span class="dot"></span> Security Issues (<span id="secCount">3</span>)
+  </div>
+  <div class="userchip">
+    <div class="avatar">JA</div>
+    <div>
+      <div class="name">Julia Alexandrova</div>
+      <div style="font-size:11px;color:var(--muted);">julia.alexandrova@yournextagency.com</div>
+    </div>
+    <span class="role-badge">Admin</span>
+  </div>
+</div>
+
+<div class="page">
+  <div class="page-head">
+    <div>
+      <h1>User Management</h1>
+      <div class="sub">8 users &middot; Unit DSNL &middot; Today: July 7, 2026</div>
+    </div>
+  </div>
+
+  <div class="banner" id="banner">
+    <strong>3 security issues:</strong> the highlighted users haven't updated their passwords in 90+ days. Ping them to request an update, or suspend the account.
+  </div>
+
+  <div class="card">
+    <table>
+      <thead>
+        <tr>
+          <th></th>
+          <th>Name</th>
+          <th>Email</th>
+          <th>Role</th>
+          <th>Password Last Updated</th>
+          <th>Status</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody id="tbody"></tbody>
+    </table>
+    <div class="foot">Showing 8 of 8 users</div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+const TODAY = new Date('2026-07-07');
+
+const users = [
+  // First 3: password ~3 months old -> needs update
+  {name:'Magali Gergaud',  email:'m.gergaud@idlp.fr',        role:'Customer Limited 1', updated:'2026-04-07', status:'needs'},
+  {name:'Thomas Berger',   email:'t.berger@nordwerk.de',     role:'Customer Limited 2', updated:'2026-04-07', status:'needs'},
+  {name:'Ana Costa',       email:'a.costa@lisboatrade.pt',   role:'Customer Limited 3', updated:'2026-04-07', status:'needs'},
+  // 5 others: 2 months / 1 month / 15 days ago (random mix)
+  {name:'James Whitfield', email:'j.whitfield@brixton.co.uk',role:'Customer Limited 4', updated:'2026-05-07', status:'ok'},  // 2 months
+  {name:'Sofia Marino',    email:'s.marino@venetogroup.it',  role:'Customer Limited 5', updated:'2026-06-22', status:'ok'},  // 15 days
+  {name:'Pieter de Vries', email:'p.devries@amstel-bv.nl',   role:'Customer Limited 6', updated:'2026-06-07', status:'ok'},  // 1 month
+  {name:'Claire Dubois',   email:'c.dubois@lyonexport.fr',   role:'Customer Limited 2', updated:'2026-05-07', status:'ok'},  // 2 months
+  {name:'Erik Lindqvist',  email:'e.lindqvist@nordika.se',   role:'Customer Limited 5', updated:'2026-06-22', status:'ok'},  // 15 days
+];
+
+function fmtDate(iso){
+  return new Date(iso).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});
+}
+function relative(iso){
+  const days = Math.round((TODAY - new Date(iso)) / 86400000);
+  if (days >= 60) return Math.round(days/30) + ' months ago';
+  if (days >= 28) return '1 month ago';
+  return days + ' days ago';
+}
+
+function render(){
+  const tb = document.getElementById('tbody');
+  tb.innerHTML = '';
+  users.forEach((u,i)=>{
+    const tr = document.createElement('tr');
+    if (u.status==='needs' && !u.suspended) tr.classList.add('flagged');
+    if (u.suspended) tr.classList.add('suspended');
+
+    const pill = u.suspended
+      ? '<span class="pill susp">Suspended</span>'
+      : u.status==='needs'
+        ? '<span class="pill needs">Needs update</span>'
+        : '<span class="pill ok">Updated</span>';
+
+    const dateCls = u.status==='needs' ? 'date-warn' : 'date-ok';
+
+    const suspendBtn = u.suspended
+      ? `<button class="btn restore" onclick="toggleSuspend(${i})">Reinstate</button>`
+      : `<button class="btn suspend" onclick="toggleSuspend(${i})">Suspend</button>`;
+
+    tr.innerHTML = `
+      <td><input type="checkbox"></td>
+      <td><span class="uname">${u.name}</span></td>
+      <td class="email">${u.email}</td>
+      <td>${u.role}</td>
+      <td><span class="${dateCls}">${fmtDate(u.updated)}</span><span class="rel">${relative(u.updated)}</span></td>
+      <td>${pill}</td>
+      <td>
+        <button class="btn ping" onclick="ping(${i})" ${u.suspended?'disabled':''}>Ping</button>
+        ${suspendBtn}
+      </td>`;
+    tb.appendChild(tr);
+  });
+  const open = users.filter(u=>u.status==='needs' && !u.suspended).length;
+  document.getElementById('secCount').textContent = open;
+}
+
+function toast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(t._h);
+  t._h = setTimeout(()=>t.classList.remove('show'), 2500);
+}
+
+function ping(i){
+  toast('Password update request sent to ' + users[i].name + ' (' + users[i].email + ')');
+}
+
+function toggleSuspend(i){
+  users[i].suspended = !users[i].suspended;
+  toast(users[i].suspended
+    ? users[i].name + ' has been suspended'
+    : users[i].name + ' has been reinstated');
+  render();
+}
+
+document.getElementById('secBadge').addEventListener('click', ()=>{
+  document.getElementById('banner').classList.toggle('show');
+  const first = document.querySelector('tr.flagged');
+  if (first) first.scrollIntoView({behavior:'smooth', block:'center'});
+});
+
+render();
+</script>
+</body>
+</html>
